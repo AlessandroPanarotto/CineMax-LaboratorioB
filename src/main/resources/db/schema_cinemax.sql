@@ -189,7 +189,14 @@ BEGIN
         RAISE EXCEPTION 'Impossibile modificare/eliminare la proiezione % : esistono % prenotazioni associate',
             v_id, v_n;
     END IF;
-    RETURN OLD;
+    -- In UPDATE un trigger BEFORE deve restituire NEW per lasciar applicare le modifiche
+    -- (restituire OLD annullerebbe silenziosamente l'update); in DELETE, NEW e' NULL
+    -- quindi va restituito OLD per consentire la cancellazione.
+    IF TG_OP = 'DELETE' THEN
+        RETURN OLD;
+    ELSE
+        RETURN NEW;
+    END IF;
 END;
 $$ LANGUAGE plpgsql;
 
@@ -210,6 +217,11 @@ SELECT
     p.id_proiezione,
     p.id_film,
     f.titolo,
+    f.genere,
+    f.regista,
+    f.anno,
+    f.durata_minuti,
+    f.eta_minima,
     p.data_proiezione,
     p.ora_proiezione,
     p.costo_biglietto,
@@ -217,7 +229,8 @@ SELECT
 FROM proiezioni p
 JOIN film f ON f.id_film = p.id_film
 LEFT JOIN prenotazioni pr ON pr.id_proiezione = p.id_proiezione
-GROUP BY p.id_proiezione, p.id_film, f.titolo, p.data_proiezione, p.ora_proiezione, p.costo_biglietto;
+GROUP BY p.id_proiezione, p.id_film, f.titolo, f.genere, f.regista, f.anno,
+         f.durata_minuti, f.eta_minima, p.data_proiezione, p.ora_proiezione, p.costo_biglietto;
 
 
 -- ---------------------------------------------------------------------
