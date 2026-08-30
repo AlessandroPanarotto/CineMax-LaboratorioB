@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>it.uninsubria.cinemax</groupId>
+  <artifactId>cinemax</artifactId>
+  <version>0.1.0-SNAPSHOT</version>
+  <packaging>jar</packaging>
+
+  <name>CineMax</name>
+  <description>
+    Laboratorio Interdisciplinare B (a.a. 2025/2026) - Universita' degli Studi dell'Insubria.
+    Sistema di gestione di un cinema monosala: palinsesto e prenotazioni,
+    con back-end serverCM su PostgreSQL/JDBC e client clientCM.
+  </description>
+
+  <properties>
+    <maven.compiler.release>17</maven.compiler.release>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <postgresql.version>42.7.4</postgresql.version>
+  </properties>
+
+  <dependencies>
+    <!-- Driver JDBC per PostgreSQL -->
+    <dependency>
+      <groupId>org.postgresql</groupId>
+      <artifactId>postgresql</artifactId>
+      <version>${postgresql.version}</version>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <finalName>cinemax</finalName>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>3.13.0</version>
+      </plugin>
+
+      <!-- Genera la javadoc in target/site/apidocs (mvn javadoc:javadoc) -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-javadoc-plugin</artifactId>
+        <version>3.10.1</version>
+      </plugin>
+
+      <!--
+        TODO (prossimo passo, dopo l'implementazione di serverCM/clientCM):
+        aggiungere maven-assembly-plugin (o maven-shade-plugin) con due
+        descrittori/esecuzioni separate per produrre bin/serverCM.jar e
+        bin/clientCM.jar (ciascuno con la propria Main-Class), come
+        richiesto dalla specifica (due eseguibili .jar distinti).
+      -->
+    </plugins>
+  </build>
+</project>
