@@ -1,0 +1,87 @@
+@startuml classi_dominio
+skinparam backgroundColor white
+skinparam classAttributeIconSize 0
+hide circle
+
+abstract class Utente {
+  # idUtente : long
+  # nome : String
+  # cognome : String
+  # username : String
+  # dataNascita : LocalDate
+  # luogoDomicilio : String
+  --
+  + getIdUtente() : long
+  + getNome() : String
+  + getCognome() : String
+  + getUsername() : String
+}
+
+class Cliente extends Utente
+class Proiezionista extends Utente
+class Bigliettaio extends Utente
+
+class Film {
+  - idFilm : long
+  - titolo : String
+  - genere : String
+  - regista : String
+  - anno : int
+  - durataMinuti : int
+  - etaMinima : int
+  --
+  + getTitolo() : String
+  + getDurataMinuti() : int
+}
+
+class Proiezione {
+  - idProiezione : long
+  - dataProiezione : LocalDate
+  - oraProiezione : LocalTime
+  - costoBiglietto : BigDecimal
+  - postiLiberi : int  <<derivato, non persistito>>
+  --
+  + getFilm() : Film
+  + isFutura() : boolean
+}
+
+class Prenotazione {
+  - codicePrenotazione : String
+  - numPosti : int
+  - dataPrenotazione : LocalDateTime
+  --
+  + getCliente() : Cliente
+  + getProiezione() : Proiezione
+  + getCostoTotale() : BigDecimal
+}
+
+class UtenteFactory <<Factory Method>> {
+  + {static} creaUtente(ruolo : String, ...) : Utente
+}
+
+Proiezione "1" o-- "1" Film : proietta >
+Prenotazione "*" --> "1" Cliente : prenota >
+Prenotazione "*" --> "1" Proiezione : riguarda >
+
+UtenteFactory ..> Cliente : crea
+UtenteFactory ..> Proiezionista : crea
+UtenteFactory ..> Bigliettaio : crea
+
+note right of UtenteFactory
+  Legge la colonna "ruolo" restituita
+  dalla query su Utenti (vedi
+  doc/02_query_servizi.md) e istanzia
+  la sottoclasse corretta: fa da ponte
+  tra la tabella unica del database
+  (§3.1 di 01_progettazione_database.md)
+  e la gerarchia OOP del dominio.
+end note
+
+note top of Prenotazione
+  getCostoTotale() = numPosti * proiezione.costoBiglietto
+  (non persistito: vedi §3.3, dato derivabile
+  perché una proiezione con prenotazioni
+  associate non è più modificabile)
+end note
+
+@enduml

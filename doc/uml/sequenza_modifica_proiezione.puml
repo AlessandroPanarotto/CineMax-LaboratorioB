@@ -1,0 +1,43 @@
+@startuml sequenza_modifica_proiezione
+skinparam backgroundColor white
+skinparam sequenceMessageAlign center
+actor Proiezionista
+
+participant "GestioneProiezioniView\n(clientCM)" as View
+participant "GestioneProiezioniController\n(clientCM)" as Ctrl
+participant "IProiezioneService\n<<stub RMI>>" as Stub
+participant "ProiezioneServiceImpl\n(serverCM)" as Impl
+participant "ProiezioneDAO" as DAO
+database "PostgreSQL\n(dbCM)" as DB
+
+Proiezionista -> View : modifica data/ora/costo\ndi una proiezione futura
+View -> Ctrl : modificaProiezione(proiezione)
+Ctrl -> Stub : modificaProiezione(proiezione)
+Stub -> Impl : modificaProiezione(proiezione)
+
+Impl -> DAO : aggiorna(proiezione)
+DAO -> DB : UPDATE proiezioni SET ...\nWHERE id_proiezione = ?
+DB -> DB : trigger check_proiezione_immutabile\n(BEFORE UPDATE)
+
+alt nessuna prenotazione associata alla proiezione
+  DB --> DAO : UPDATE eseguito (1 riga)
+  DAO --> Impl : void
+  Impl --> Stub : void
+  Stub --> Ctrl : void
+  Ctrl -> View : conferma modifica avvenuta
+else esistono prenotazioni gia' associate
+  DB --> DAO : RAISE EXCEPTION\n"Impossibile modificare/eliminare\nla proiezione: prenotazioni associate"
+  DAO --> Impl : throws SQLException
+  Impl --> Stub : throws ServiceException\n("operazione non consentita")
+  Stub --> Ctrl : ServiceException
+  Ctrl -> View : mostra messaggio di errore
+end
+
+note over DB
+  Lo stesso trigger protegge anche
+  eliminaProiezione (DELETE): vedi
+  §6 di 01_progettazione_database.md
+  e schema_cinemax.sql
+end note
+
+@enduml

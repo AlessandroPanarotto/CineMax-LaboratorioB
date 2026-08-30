@@ -1,0 +1,164 @@
+@startuml classi_architettura
+skinparam backgroundColor white
+skinparam classAttributeIconSize 0
+hide circle
+left to right direction
+
+package "cinemax.common\n(condiviso client/server)" {
+  interface IAutenticazioneService <<Remote>> {
+    + registraCliente(dati : ClienteDTO) : Cliente
+    + login(username : String, password : String) : Utente
+  }
+  interface IProiezioneService <<Remote>> {
+    + cercaProiezioni(titolo : String) : List<Proiezione>
+    + visualizzaProiezione(id : long) : Proiezione
+    + aggiungiProiezione(p : Proiezione) : void
+    + modificaProiezione(p : Proiezione) : void
+    + eliminaProiezione(id : long) : void
+  }
+  interface IPrenotazioneService <<Remote>> {
+    + creaPrenotazione(p : Prenotazione) : String
+    + modificaPrenotazione(cod : String, numPosti : int) : void
+    + eliminaPrenotazione(cod : String) : void
+    + visualizzaPrenotazioni(idCliente : long) : List<Prenotazione>
+    + cercaPrenotazioni(criterio : String) : List<Prenotazione>
+  }
+  class ServiceException <<Exception>>
+}
+
+package "cinemax.server" {
+
+  package "service (Facade RMI)" {
+    class AutenticazioneServiceImpl <<UnicastRemoteObject>>
+    class ProiezioneServiceImpl <<UnicastRemoteObject>>
+    class PrenotazioneServiceImpl <<UnicastRemoteObject>>
+  }
+
+  package "dao" {
+    interface UtenteDAO {
+      + findByUsername(u : String) : Utente
+      + inserisci(u : Utente) : void
+    }
+    interface FilmDAO {
+      + findById(id : long) : Film
+      + cercaPerTitolo(t : String) : List<Film>
+    }
+    interface ProiezioneDAO {
+      + findById(id : long) : Proiezione
+      + cerca(criteri : ...) : List<Proiezione>
+      + inserisci(p : Proiezione) : void
+      + aggiorna(p : Proiezione) : void
+      + elimina(id : long) : void
+    }
+    interface PrenotazioneDAO {
+      + inserisci(p : Prenotazione) : String
+      + aggiorna(cod : String, numPosti : int) : void
+      + elimina(cod : String) : void
+      + findByCliente(idCliente : long) : List<Prenotazione>
+    }
+
+    class UtenteDAOPostgres
+    class FilmDAOPostgres
+    class ProiezioneDAOPostgres
+    class PrenotazioneDAOPostgres
+  }
+
+  class ConnectionManager <<Singleton>> {
+    - {static} instance : ConnectionManager
+    - pool : DataSource
+    - ConnectionManager()
+    + {static} getInstance() : ConnectionManager
+    + getConnection() : Connection
+  }
+
+  class UtenteFactory <<Factory Method>> {
+    + {static} creaUtente(ruolo : String, ...) : Utente
+  }
+
+  class ServerMain {
+    + {static} main(args : String[]) : void
+  }
+}
+
+package "cinemax.client" {
+  package "controller (MVC)" {
+    class LoginController
+    class PrenotazioneController
+    class GestioneProiezioniController
+  }
+  package "view (MVC)" {
+    class LoginView
+    class RicercaProiezioniView
+    class PrenotazioneView
+  }
+  class ClientMain {
+    + {static} main(args : String[]) : void
+  }
+}
+
+AutenticazioneServiceImpl ..|> IAutenticazioneService
+ProiezioneServiceImpl ..|> IProiezioneService
+PrenotazioneServiceImpl ..|> IPrenotazioneService
+
+AutenticazioneServiceImpl --> UtenteDAO : usa
+AutenticazioneServiceImpl --> UtenteFactory : usa
+ProiezioneServiceImpl --> ProiezioneDAO : usa
+ProiezioneServiceImpl --> FilmDAO : usa
+PrenotazioneServiceImpl --> PrenotazioneDAO : usa
+PrenotazioneServiceImpl --> ProiezioneDAO : usa
+
+UtenteDAOPostgres ..|> UtenteDAO
+FilmDAOPostgres ..|> FilmDAO
+ProiezioneDAOPostgres ..|> ProiezioneDAO
+PrenotazioneDAOPostgres ..|> PrenotazioneDAO
+
+UtenteDAOPostgres --> ConnectionManager : usa
+FilmDAOPostgres --> ConnectionManager : usa
+ProiezioneDAOPostgres --> ConnectionManager : usa
+PrenotazioneDAOPostgres --> ConnectionManager : usa
+
+ServerMain --> AutenticazioneServiceImpl : istanzia\ne pubblica su RMI registry
+ServerMain --> ProiezioneServiceImpl : istanzia\ne pubblica
+ServerMain --> PrenotazioneServiceImpl : istanzia\ne pubblica
+
+LoginController ..> IAutenticazioneService : invoca (stub RMI)
+PrenotazioneController ..> IPrenotazioneService : invoca (stub RMI)
+PrenotazioneController ..> IProiezioneService : invoca (stub RMI)
+GestioneProiezioniController ..> IProiezioneService : invoca (stub RMI)
+
+LoginController --> LoginView
+PrenotazioneController --> PrenotazioneView
+GestioneProiezioniController --> RicercaProiezioniView
+
+ClientMain --> LoginController
+
+note bottom of IAutenticazioneService
+  Le interfacce Remote di cinemax.common
+  sono il contratto condiviso da clientCM e
+  serverCM (compilato in entrambi i jar):
+  fungono da <<Facade>> verso il client,
+  che vede solo poche operazioni ad alto
+  livello invece dei DAO e della logica interna.
+  Lo stub generato da RMI implementa inoltre
+  il pattern <<Proxy>>: il client invoca metodi
+  locali che inoltrano la chiamata al server.
+end note
+
+note bottom of ConnectionManager
+  Singleton: unico punto di accesso al
+  connection pool verso PostgreSQL,
+  condiviso da tutti i DAO lato server
+  (accesso concorrente multi-client,
+  vedi requisito di concorrenza in
+  01_progettazione_database.md).
+end note
+
+note bottom of UtenteDAOPostgres
+  Pattern DAO: isola le query SQL
+  (vedi doc/02_query_servizi.md) dalla
+  logica di servizio, cosi' un domani
+  l'accesso ai dati puo' essere sostituito
+  senza toccare i Service.
+end note
+
+@enduml

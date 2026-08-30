@@ -1,0 +1,44 @@
+@startuml sequenza_login
+skinparam backgroundColor white
+skinparam sequenceMessageAlign center
+actor Utente
+
+participant "LoginView\n(clientCM)" as View
+participant "LoginController\n(clientCM)" as Ctrl
+participant "IAutenticazioneService\n<<stub RMI>>" as Stub
+participant "AutenticazioneServiceImpl\n(serverCM)" as Impl
+participant "UtenteFactory" as Factory
+participant "UtenteDAO" as DAO
+participant "ConnectionManager\n<<Singleton>>" as CM
+database "PostgreSQL\n(dbCM)" as DB
+
+Utente -> View : inserisce username e password
+View -> Ctrl : login(username, password)
+Ctrl -> Stub : login(username, password)
+note right of Stub
+  lo stub RMI (pattern <<Proxy>>)
+  inoltra la chiamata sulla rete
+  all'oggetto remoto sul server
+end note
+Stub -> Impl : login(username, password)
+
+Impl -> DAO : findByUsername(username)
+DAO -> CM : getConnection()
+CM --> DAO : Connection (dal pool)
+DAO -> DB : SELECT * FROM utenti\nWHERE username = ?
+DB --> DAO : riga utente\n(hash password, ruolo, ...)
+DAO --> Impl : UtenteRow | null
+
+alt utente trovato e crypt(password, hash) = hash
+  Impl -> Factory : creaUtente(ruolo, datiRiga)
+  Factory --> Impl : Cliente | Proiezionista | Bigliettaio
+  Impl --> Stub : Utente
+  Stub --> Ctrl : Utente
+  Ctrl -> View : apre schermata principale\n(in base al ruolo)
+else utente non trovato o password errata
+  Impl --> Stub : throws ServiceException\n("credenziali non valide")
+  Stub --> Ctrl : ServiceException
+  Ctrl -> View : mostra messaggio di errore
+end
+
+@enduml

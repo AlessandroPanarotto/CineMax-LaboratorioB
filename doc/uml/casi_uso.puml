@@ -1,0 +1,79 @@
+@startuml casi_uso
+left to right direction
+skinparam packageStyle rect
+skinparam actorStyle awesome
+skinparam backgroundColor white
+
+actor "Utente non\nregistrato\n(guest)" as Guest
+actor "Utente\nregistrato" as UtenteReg
+actor "Cliente" as Cliente
+actor "Proiezionista" as Proiezionista
+actor "Bigliettaio" as Bigliettaio
+
+UtenteReg <|-- Cliente
+UtenteReg <|-- Proiezionista
+UtenteReg <|-- Bigliettaio
+
+rectangle "CineMax (clientCM)" {
+
+  usecase "Cercare proiezioni" as UC1
+  usecase "Visualizzare dettagli\nproiezione" as UC2
+  usecase "Registrarsi come cliente" as UC3
+  usecase "Visualizzare proiezioni dei\nprossimi 3 mesi per un film" as UC4
+
+  usecase "Login" as UC5
+  usecase "Logout" as UC6
+
+  usecase "Inserire prenotazione" as UC7
+  usecase "Visualizzare proprie\nprenotazioni attive" as UC8
+  usecase "Modificare prenotazione" as UC9
+  usecase "Cancellare prenotazione" as UC10
+
+  usecase "Inserire film e proiezione" as UC11
+  usecase "Modificare proiezione" as UC12
+  usecase "Eliminare proiezione" as UC13
+  usecase "Visualizzare proiezioni\npianificate" as UC14
+  usecase "Visualizzare proiezioni\nstoriche" as UC15
+
+  usecase "Visualizzare prenotazioni\nodierne" as UC16
+  usecase "Cercare prenotazioni" as UC17
+  usecase "Visualizzare dettaglio\nprenotazione" as UC18
+}
+
+Guest --> UC1
+Guest --> UC2
+Guest --> UC3
+Guest --> UC4
+
+UtenteReg --> UC5
+UtenteReg --> UC6
+
+Cliente --> UC7
+Cliente --> UC8
+Cliente --> UC9
+Cliente --> UC10
+UC7 ..> UC1 : <<include>>
+
+Proiezionista --> UC11
+Proiezionista --> UC12
+Proiezionista --> UC13
+Proiezionista --> UC14
+Proiezionista --> UC15
+
+Bigliettaio --> UC16
+Bigliettaio --> UC17
+Bigliettaio --> UC18
+UC17 ..> UC18 : <<include>>
+
+note bottom of UC9
+  Ammessa solo se sia la vecchia
+  che la nuova proiezione hanno
+  data successiva a quella odierna
+end note
+
+note bottom of UC13
+  Ammessa solo se non esistono
+  prenotazioni per la proiezione
+end note
+
+@enduml

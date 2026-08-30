@@ -1,0 +1,48 @@
+@startuml sequenza_prenotazione
+skinparam backgroundColor white
+skinparam sequenceMessageAlign center
+actor Cliente
+
+participant "PrenotazioneView\n(clientCM)" as View
+participant "PrenotazioneController\n(clientCM)" as Ctrl
+participant "IPrenotazioneService\n<<stub RMI>>" as Stub
+participant "PrenotazioneServiceImpl\n(serverCM)" as Impl
+participant "ProiezioneDAO" as PDAO
+participant "PrenotazioneDAO" as RDAO
+participant "ConnectionManager\n<<Singleton>>" as CM
+database "PostgreSQL\n(dbCM)" as DB
+
+Cliente -> View : sceglie proiezione e numero posti,\nconferma prenotazione
+View -> Ctrl : creaPrenotazione(idCliente, idProiezione, numPosti)
+Ctrl -> Stub : creaPrenotazione(prenotazione)
+Stub -> Impl : creaPrenotazione(prenotazione)
+
+Impl -> PDAO : findById(idProiezione)
+PDAO -> CM : getConnection()
+CM --> PDAO : Connection
+PDAO -> DB : SELECT ... FROM v_proiezioni_disponibilita\nWHERE id_proiezione = ?
+DB --> PDAO : proiezione + posti liberi
+PDAO --> Impl : Proiezione
+
+alt posti liberi >= numPosti richiesti
+  Impl -> RDAO : inserisci(prenotazione)
+  RDAO -> DB : INSERT INTO prenotazioni (...)
+  note right of DB
+    trigger check_capienza_sala
+    ricontrola i posti disponibili
+    a livello DB (difesa in profondita',
+    valida anche in concorrenza fra piu' client)
+  end note
+  DB -> DB : genera_codice_prenotazione()
+  DB --> RDAO : codice_prenotazione generato
+  RDAO --> Impl : codicePrenotazione
+  Impl --> Stub : codicePrenotazione
+  Stub --> Ctrl : codicePrenotazione
+  Ctrl -> View : mostra conferma\ncon codice prenotazione
+else posti insufficienti (controllo applicativo o trigger DB)
+  Impl --> Stub : throws ServiceException\n("posti non disponibili")
+  Stub --> Ctrl : ServiceException
+  Ctrl -> View : mostra messaggio di errore
+end
+
+@enduml
