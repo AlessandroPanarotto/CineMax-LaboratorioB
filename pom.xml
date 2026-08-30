@@ -13,7 +13,7 @@
   <description>
     Laboratorio Interdisciplinare B (a.a. 2025/2026) - Universita' degli Studi dell'Insubria.
     Sistema di gestione di un cinema monosala: palinsesto e prenotazioni,
-    con back-end serverCM su PostgreSQL/JDBC e client clientCM.
+    con back-end serverCM su PostgreSQL/JDBC e client clientCM (RMI + Swing).
   </description>
 
   <properties>
@@ -45,14 +45,18 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-javadoc-plugin</artifactId>
         <version>3.10.1</version>
+        <configuration>
+          <doclint>none</doclint>
+        </configuration>
       </plugin>
 
       <!--
-        TODO (prossimo passo, dopo l'implementazione di serverCM/clientCM):
-        aggiungere maven-assembly-plugin (o maven-shade-plugin) con due
-        descrittori/esecuzioni separate per produrre bin/serverCM.jar e
-        bin/clientCM.jar (ciascuno con la propria Main-Class), come
-        richiesto dalla specifica (due eseguibili .jar distinti).
+        maven-assembly-plugin: produce due jar eseguibili distinti,
+        ciascuno con tutte le dipendenze incluse (driver JDBC compreso
+        nel solo serverCM, che e' l'unico a parlare con il database):
+          - bin/serverCM.jar  (Main-Class: cinemax.server.ServerMain)
+          - bin/clientCM.jar  (Main-Class: cinemax.client.ClientMain)
+        Vedi sezione dedicata piu' sotto quando i Main saranno pronti.
       -->
     </plugins>
   </build>
