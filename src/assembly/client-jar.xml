@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Descrittore "custom" per il jar del client (clientCM.jar).
+
+  A differenza del jar del server, qui NON vogliamo includere il driver
+  JDBC di PostgreSQL: il client non si collega mai direttamente al
+  database (parla solo via RMI con il server), quindi non gli serve.
+  Per questo non usiamo il descrittore predefinito "jar-with-dependencies"
+  (che imballerebbe anche il driver), ma questo file scritto a mano che
+  prende solo le classi compilate del progetto (target/classes), senza
+  le dipendenze esterne.
+
+  Nota: essendo un progetto a modulo singolo, dentro target/classes ci
+  sono sia le classi del client che quelle del server: non e' un problema,
+  perche' ClientMain non le usa mai, restano semplicemente inutilizzate
+  nel jar.
+-->
+<assembly xmlns="http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.3"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.3 http://maven.apache.org/xsd/assembly-1.1.3.xsd">
+  <id>client</id>
+  <formats>
+    <format>jar</format>
+  </formats>
+  <includeBaseDirectory>false</includeBaseDirectory>
+  <fileSets>
+    <fileSet>
+      <directory>${project.build.outputDirectory}</directory>
+      <outputDirectory>/</outputDirectory>
+    </fileSet>
+  </fileSets>
+</assembly>

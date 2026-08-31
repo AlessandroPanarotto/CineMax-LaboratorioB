@@ -6,45 +6,45 @@ import java.sql.SQLException;
 import java.time.LocalDate;
 import java.util.List;
 
-/** Accesso alla tabella {@code prenotazioni} (vedi {@code doc/02_query_servizi.md}). */
+/** DAO per la tabella "prenotazioni": le firme dei metodi che i service usano per leggere/scrivere le prenotazioni. */
 public interface PrenotazioneDAO {
 
     /**
-     * @return il codice prenotazione generato dal database
-     * @throws SQLException se un trigger rifiuta l'inserimento: utente non
-     *      cliente ({@code trg_ruolo_cliente}) o posti insufficienti
-     *      ({@code trg_capienza_sala})
+     * Inserisce una nuova prenotazione e restituisce il codice generato dal database.
+     * Attenzione: nel database ci sono dei trigger che possono rifiutare
+     * l'inserimento (per esempio se l'utente non e' un cliente, o se non ci
+     * sono abbastanza posti liberi): in quel caso questo metodo lancia una SQLException.
      */
     String inserisci(long idUtente, long idProiezione, int numPosti) throws SQLException;
 
-    /** Prenotazioni attive (relative a proiezioni future) di un cliente. */
+    /** Restituisce le prenotazioni ancora "attive" (relative a proiezioni future) di un cliente. */
     List<Prenotazione> findByUtente(long idUtente) throws SQLException;
 
     /**
-     * @throws SQLException se il trigger {@code trg_capienza_sala} rifiuta
-     *      la modifica (posti insufficienti sulla nuova proiezione)
+     * Sposta una prenotazione su un'altra proiezione. Anche qui c'e' un
+     * trigger sul database che puo' rifiutare la modifica se sulla nuova
+     * proiezione non ci sono abbastanza posti liberi.
      */
     void aggiornaProiezione(String codicePrenotazione, long nuovaIdProiezione) throws SQLException;
 
+    /** Cancella una prenotazione dato il suo codice. */
     void elimina(String codicePrenotazione) throws SQLException;
 
-    /** Prenotazioni relative a proiezioni della data odierna. */
+    /** Restituisce le prenotazioni relative alle proiezioni di oggi. */
     List<Prenotazione> odierne() throws SQLException;
 
-    /** Ricerca combinabile: ogni criterio {@code null} viene ignorato. */
+    /** Ricerca con criteri combinabili: ogni parametro che viene passato null non viene usato come filtro. */
     List<Prenotazione> cerca(String codice, String nomeCognome, String titoloFilm,
                               LocalDate dataDa, LocalDate dataA) throws SQLException;
 
-    /** @return la prenotazione, oppure {@code null} se il codice non esiste */
+    /** Cerca una prenotazione dal suo codice. Restituisce null se il codice non esiste. */
     Prenotazione findByCodice(String codicePrenotazione) throws SQLException;
 
     /**
-     * Data della proiezione attualmente associata a una prenotazione — usata
-     * dal service per verificare le precondizioni temporali di
-     * {@code modificaPrenotazione}/{@code eliminaPrenotazione} prima di
-     * eseguire l'operazione (vedi {@code doc/02_query_servizi.md}).
-     *
-     * @return la data, oppure {@code null} se il codice non esiste
+     * Restituisce solo la data della proiezione a cui e' collegata una
+     * prenotazione. Serve al service per controllare, prima di modificare o
+     * cancellare una prenotazione, che la proiezione non sia gia' passata.
+     * Restituisce null se il codice non esiste.
      */
     LocalDate dataProiezioneDiPrenotazione(String codicePrenotazione) throws SQLException;
 }

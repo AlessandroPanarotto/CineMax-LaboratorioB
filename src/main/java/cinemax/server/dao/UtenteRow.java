@@ -3,12 +3,11 @@ package cinemax.server.dao;
 import java.time.LocalDate;
 
 /**
- * Dato "grezzo" restituito da {@link UtenteDAO}: i campi di una riga della
- * tabella {@code utenti}, senza ancora sapere se corrisponde a un
- * {@code Cliente}, {@code Proiezionista} o {@code Bigliettaio}. E'
- * {@code cinemax.server.factory.UtenteFactory} a leggere il campo
- * {@link #ruolo} e istanziare la sottoclasse Java corretta (vedi
- * {@code doc/uml/sequenza_login.puml}).
+ * Rappresenta una riga "grezza" della tabella utenti, cosi' come esce dal
+ * database: a questo livello non sappiamo ancora se l'utente e' un Cliente,
+ * un Proiezionista o un Bigliettaio, sappiamo solo il valore del campo
+ * "ruolo". E' UtenteFactory (nel package factory) a leggere quel campo e
+ * creare l'oggetto Java della sottoclasse giusta.
  */
 public final class UtenteRow {
 

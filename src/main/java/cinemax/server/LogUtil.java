@@ -1,23 +1,31 @@
 package cinemax.server;
 
 /**
- * Log minimale lato server per le eccezioni SQL intercettate nei service RMI.
+ * Classe di utilita' per loggare lato server gli errori che arrivano dal database.
  *
- * <p>Le eccezioni del driver JDBC (es. {@code org.postgresql.util.PSQLException})
- * non devono mai attraversare la connessione RMI come "cause" di una
- * {@code ServiceException}/{@code RemoteException}: il client non ha (e non
- * deve avere) il driver PostgreSQL sul classpath, quindi la deserializzazione
- * fallirebbe con una {@code ClassNotFoundException} lato client. Il messaggio
- * testuale dell'eccezione viene comunque incluso nell'eccezione applicativa;
- * lo stack trace completo resta solo nel log del server.</p>
+ * A cosa serve: se un DAO prende una SQLException (magari lanciata proprio
+ * dal driver di PostgreSQL) e la lasciasse passare cosi' com'e' fino al
+ * client tramite RMI, il client andrebbe in errore, perche' non ha il driver
+ * PostgreSQL nel suo classpath e quindi non riuscirebbe a deserializzare
+ * quella eccezione (una ClassNotFoundException). Per questo motivo i service
+ * prendono solo il messaggio testuale dell'eccezione e lo incapsulano dentro
+ * una loro eccezione applicativa; lo stack trace completo, quello utile per
+ * il debug, viene stampato solo qui nel log del server.
  */
 public final class LogUtil {
 
+    // Costruttore privato: questa classe ha solo metodi statici, non ha senso istanziarla.
     private LogUtil() {
     }
 
+    /**
+     * Stampa sul log del server il messaggio di un'eccezione, insieme a un
+     * "contesto" (di solito il nome del metodo dove e' successo l'errore)
+     * cosi' e' piu' facile capire da dove arriva il problema.
+     */
     public static void erroreDb(String contesto, Exception e) {
         System.err.println("[serverCM] " + contesto + ": " + e.getMessage());
+        // stampiamo comunque lo stack trace completo: serve solo lato server per il debug
         e.printStackTrace();
     }
 }

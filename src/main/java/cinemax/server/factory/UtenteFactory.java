@@ -7,27 +7,39 @@ import cinemax.common.Utente;
 import cinemax.server.dao.UtenteRow;
 
 /**
- * Factory Method: legge il campo {@code ruolo} di un {@link UtenteRow} (dato
- * grezzo dal database) e istanzia la sottoclasse di {@link Utente} corretta.
- * Fa da ponte fra la tabella unica {@code utenti} del database (§3.1 di
- * {@code doc/01_progettazione_database.md}) e la gerarchia OOP del dominio
- * (vedi {@code doc/uml/classi_dominio.puml} e §2 di
- * {@code doc/03_progettazione_uml.md}).
+ * Questa classe implementa il pattern Factory Method: dato un UtenteRow (il
+ * dato "grezzo" che arriva dal database, dove tutti gli utenti stanno in
+ * un'unica tabella "utenti") crea l'oggetto Java della sottoclasse giusta di
+ * Utente, guardando il valore del campo ruolo. In questo modo il resto del
+ * codice (i service) chiede semplicemente "dammi l'oggetto Utente" senza
+ * doversi occupare di distinguere i tre casi.
  */
 public final class UtenteFactory {
 
+    // Classe di solo metodi statici: costruttore privato per non farla istanziare.
     private UtenteFactory() {
     }
 
     public static Utente creaUtente(UtenteRow row) {
-        return switch (row.ruolo) {
-            case "cliente" -> new Cliente(
-                    row.idUtente, row.nome, row.cognome, row.username, row.dataNascita, row.luogoDomicilio);
-            case "proiezionista" -> new Proiezionista(
-                    row.idUtente, row.nome, row.cognome, row.username, row.dataNascita, row.luogoDomicilio);
-            case "bigliettaio" -> new Bigliettaio(
-                    row.idUtente, row.nome, row.cognome, row.username, row.dataNascita, row.luogoDomicilio);
-            default -> throw new IllegalStateException("Ruolo utente sconosciuto: " + row.ruolo);
-        };
+        // In base al valore letto dal database creiamo l'oggetto della
+        // sottoclasse corrispondente. I dati anagrafici (id, nome, cognome,
+        // username, data di nascita, luogo di domicilio) sono uguali in
+        // tutti e tre i casi, cambia solo la classe che viene istanziata.
+        switch (row.ruolo) {
+            case "cliente":
+                return new Cliente(
+                        row.idUtente, row.nome, row.cognome, row.username, row.dataNascita, row.luogoDomicilio);
+            case "proiezionista":
+                return new Proiezionista(
+                        row.idUtente, row.nome, row.cognome, row.username, row.dataNascita, row.luogoDomicilio);
+            case "bigliettaio":
+                return new Bigliettaio(
+                        row.idUtente, row.nome, row.cognome, row.username, row.dataNascita, row.luogoDomicilio);
+            default:
+                // Non dovrebbe mai succedere se il database e' popolato correttamente
+                // (il ruolo ha un vincolo CHECK sui tre valori validi), ma lo
+                // gestiamo comunque per non lasciare il metodo senza un return.
+                throw new IllegalStateException("Ruolo utente sconosciuto: " + row.ruolo);
+        }
     }
 }

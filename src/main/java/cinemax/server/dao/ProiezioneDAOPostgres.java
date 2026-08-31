@@ -17,9 +17,12 @@ import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 
-/** Implementazione PostgreSQL di {@link ProiezioneDAO} (vedi {@code doc/02_query_servizi.md}). */
+/** Implementazione di ProiezioneDAO con query JDBC su PostgreSQL. */
 public class ProiezioneDAOPostgres implements ProiezioneDAO {
 
+    // Colonne comuni a tutte le query di sola lettura, che leggono dalla
+    // vista v_proiezioni_disponibilita (unisce gia' proiezioni + film e
+    // calcola i posti liberi, quindi qui non serve scrivere JOIN).
     private static final String COLONNE_VISTA =
             "id_proiezione, id_film, titolo, genere, regista, anno, durata_minuti, " +
             "eta_minima, data_proiezione, ora_proiezione, costo_biglietto, posti_liberi";
@@ -39,6 +42,11 @@ public class ProiezioneDAOPostgres implements ProiezioneDAO {
     @Override
     public List<Proiezione> cerca(String titolo, String genere, LocalDate dataDa, LocalDate dataA,
                                    BigDecimal costoMin, BigDecimal costoMax) throws SQLException {
+        // Stesso schema di filtri opzionali usato in PrenotazioneDAOPostgres.cerca():
+        // per ogni criterio, "?::tipo IS NULL OR condizione" fa si' che un
+        // parametro null non filtri nulla. Ogni criterio compare due volte
+        // nella query (controllo + confronto), quindi va impostato due volte
+        // sugli indici corrispondenti dei parametri.
         String sql = "SELECT " + COLONNE_VISTA + " FROM v_proiezioni_disponibilita " +
                 "WHERE (?::text IS NULL OR titolo ILIKE '%' || ?::text || '%') " +
                 "AND (?::text IS NULL OR genere = ?::text) " +
@@ -100,6 +108,10 @@ public class ProiezioneDAOPostgres implements ProiezioneDAO {
 
     @Override
     public long inserisci(long idFilm, LocalDate data, LocalTime ora, BigDecimal costoBiglietto) throws SQLException {
+        // Nota: qui l'INSERT e' sulla tabella "vera" proiezioni, non sulla
+        // vista (le viste normalmente non si possono modificare direttamente).
+        // Se la nuova proiezione si sovrappone a un'altra, un trigger del
+        // database blocca l'inserimento e viene lanciata una SQLException.
         String sql = "INSERT INTO proiezioni (id_film, data_proiezione, ora_proiezione, costo_biglietto) " +
                 "VALUES (?, ?, ?, ?) RETURNING id_proiezione";
         try (Connection conn = ConnectionManager.getInstance().getConnection();
@@ -140,6 +152,7 @@ public class ProiezioneDAOPostgres implements ProiezioneDAO {
         }
     }
 
+    // Metodo di comodo: esegue la query e trasforma tutte le righe restituite in una List<Proiezione>.
     private List<Proiezione> eseguiLista(PreparedStatement ps) throws SQLException {
         try (ResultSet rs = ps.executeQuery()) {
             List<Proiezione> risultato = new ArrayList<>();
@@ -150,6 +163,7 @@ public class ProiezioneDAOPostgres implements ProiezioneDAO {
         }
     }
 
+    // Trasforma la riga corrente del ResultSet in un oggetto Proiezione (che contiene anche il Film collegato).
     private Proiezione mapRow(ResultSet rs) throws SQLException {
         Film film = new Film(
                 rs.getLong("id_film"),
@@ -168,6 +182,8 @@ public class ProiezioneDAOPostgres implements ProiezioneDAO {
                 rs.getInt("posti_liberi"));
     }
 
+    // Imposta un parametro String, oppure NULL SQL se il valore e' assente
+    // o vuoto (cosi' un filtro di ricerca "vuoto" viene ignorato).
     private void setNullableString(PreparedStatement ps, int index, String value) throws SQLException {
         if (value == null || value.isBlank()) {
             ps.setNull(index, Types.VARCHAR);
@@ -176,6 +192,7 @@ public class ProiezioneDAOPostgres implements ProiezioneDAO {
         }
     }
 
+    // Stessa idea di setNullableString ma per le date.
     private void setNullableDate(PreparedStatement ps, int index, LocalDate value) throws SQLException {
         if (value == null) {
             ps.setNull(index, Types.DATE);
@@ -184,6 +201,7 @@ public class ProiezioneDAOPostgres implements ProiezioneDAO {
         }
     }
 
+    // Stessa idea di setNullableString ma per gli importi (costo minimo/massimo del biglietto).
     private void setNullableBigDecimal(PreparedStatement ps, int index, BigDecimal value) throws SQLException {
         if (value == null) {
             ps.setNull(index, Types.NUMERIC);

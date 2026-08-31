@@ -5,16 +5,18 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 /**
- * Prenotazione di {@code numPosti} posti per una {@link Proiezione}, effettuata
- * da un utente con ruolo {@code cliente} (tabella {@code prenotazioni}).
+ * Rappresenta la prenotazione di un certo numero di posti (numPosti) per una
+ * proiezione, fatta da un cliente (tabella "prenotazioni").
  *
- * <p>Porta con se' anche nome/cognome del cliente che ha effettuato la
- * prenotazione: comodo lato bigliettaio (che deve poterli visualizzare senza
- * un'ulteriore chiamata RMI) e non problematico lato cliente (sono i propri
- * dati). {@code costoTotale} e' un dato derivato non persistito (§3.3 di
- * {@code doc/01_progettazione_database.md}): una proiezione con prenotazioni
- * associate non e' piu' modificabile, quindi {@code numPosti * costoBiglietto}
- * resta valido per tutta la vita della prenotazione.</p>
+ * Insieme all'id del cliente teniamo anche nome e cognome: cosi' il
+ * bigliettaio puo' visualizzarli subito senza dover fare un'altra chiamata
+ * al server. Per il cliente non e' un problema, dato che sono i suoi
+ * stessi dati.
+ *
+ * Il costo totale non viene salvato nel database ma calcolato al volo
+ * (vedi getCostoTotale sotto): questo va bene perche' una volta che una
+ * proiezione ha delle prenotazioni non puo' piu' essere modificata, quindi
+ * il prezzo del biglietto usato nel calcolo resta sempre valido.
  */
 public class Prenotazione implements Serializable {
 
@@ -28,6 +30,7 @@ public class Prenotazione implements Serializable {
     private final int numPosti;
     private final LocalDateTime dataPrenotazione;
 
+    // costruttore che riceve tutti i dati della prenotazione, gia' pronti (arrivano dal server)
     public Prenotazione(String codicePrenotazione, long idUtente, String nomeCliente,
                          String cognomeCliente, Proiezione proiezione, int numPosti,
                          LocalDateTime dataPrenotazione) {
@@ -68,7 +71,7 @@ public class Prenotazione implements Serializable {
         return dataPrenotazione;
     }
 
-    /** {@code numPosti * proiezione.getCostoBiglietto()} — dato derivato, non persistito. */
+    // il costo totale e' semplicemente il prezzo di un biglietto moltiplicato per il numero di posti
     public BigDecimal getCostoTotale() {
         return proiezione.getCostoBiglietto().multiply(BigDecimal.valueOf(numPosti));
     }

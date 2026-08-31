@@ -2,7 +2,7 @@ package cinemax.common;
 
 import java.time.LocalDate;
 
-/** Utente con ruolo {@code bigliettaio}: consulta e cerca le prenotazioni in biglietteria. */
+// Utente con ruolo "bigliettaio": in biglietteria consulta e cerca le prenotazioni
 public class Bigliettaio extends Utente {
 
     private static final long serialVersionUID = 1L;

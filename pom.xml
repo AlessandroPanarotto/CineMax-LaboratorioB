@@ -51,13 +51,63 @@
       </plugin>
 
       <!--
-        maven-assembly-plugin: produce due jar eseguibili distinti,
-        ciascuno con tutte le dipendenze incluse (driver JDBC compreso
-        nel solo serverCM, che e' l'unico a parlare con il database):
-          - bin/serverCM.jar  (Main-Class: cinemax.server.ServerMain)
-          - bin/clientCM.jar  (Main-Class: cinemax.client.ClientMain)
-        Vedi sezione dedicata piu' sotto quando i Main saranno pronti.
+        maven-assembly-plugin: con "mvn package" produce due jar eseguibili
+        distinti dentro la cartella bin/ del progetto:
+          - bin/serverCM.jar : contiene anche il driver JDBC di PostgreSQL
+            (descrittore predefinito "jar-with-dependencies"), perche' e'
+            l'unico a parlare col database. Main-Class: cinemax.server.ServerMain
+          - bin/clientCM.jar : NON contiene il driver JDBC (non gli serve,
+            il client parla solo via RMI), usa il descrittore scritto a
+            mano in src/assembly/client-jar.xml. Main-Class: cinemax.client.ClientMain
+        Ogni <execution> qui sotto rappresenta la creazione di uno dei due jar.
       -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-assembly-plugin</artifactId>
+        <version>3.7.1</version>
+        <executions>
+          <execution>
+            <id>build-server-jar</id>
+            <phase>package</phase>
+            <goals>
+              <goal>single</goal>
+            </goals>
+            <configuration>
+              <descriptorRefs>
+                <descriptorRef>jar-with-dependencies</descriptorRef>
+              </descriptorRefs>
+              <archive>
+                <manifest>
+                  <mainClass>cinemax.server.ServerMain</mainClass>
+                </manifest>
+              </archive>
+              <finalName>serverCM</finalName>
+              <appendAssemblyId>false</appendAssemblyId>
+              <outputDirectory>${project.basedir}/bin</outputDirectory>
+            </configuration>
+          </execution>
+          <execution>
+            <id>build-client-jar</id>
+            <phase>package</phase>
+            <goals>
+              <goal>single</goal>
+            </goals>
+            <configuration>
+              <descriptors>
+                <descriptor>src/assembly/client-jar.xml</descriptor>
+              </descriptors>
+              <archive>
+                <manifest>
+                  <mainClass>cinemax.client.ClientMain</mainClass>
+                </manifest>
+              </archive>
+              <finalName>clientCM</finalName>
+              <appendAssemblyId>false</appendAssemblyId>
+              <outputDirectory>${project.basedir}/bin</outputDirectory>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
     </plugins>
   </build>
 </project>

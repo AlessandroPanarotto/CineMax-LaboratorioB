@@ -4,15 +4,18 @@ import java.io.Serializable;
 import java.time.LocalDate;
 
 /**
- * Utente registrato di CineMax. Classe astratta: ogni istanza concreta e'
- * {@link Cliente}, {@link Proiezionista} o {@link Bigliettaio} (vedi
- * {@code doc/uml/classi_dominio.puml}). Corrisponde alla riga della tabella
- * {@code utenti} nel database, dove il ruolo e' l'attributo discriminante
- * che sostituisce la gerarchia ISA concettuale (vedi
- * {@code doc/01_progettazione_database.md}, §3.1).
+ * Classe astratta che rappresenta un utente registrato di CineMax.
+ * Un utente vero e proprio non e' mai un Utente "generico": e' sempre
+ * uno tra {@link Cliente}, {@link Proiezionista} e {@link Bigliettaio},
+ * che estendono questa classe e ne implementano il ruolo.
  *
- * <p>Attraversa la connessione RMI come oggetto serializzato: non contiene
- * la password (in nessuna forma) tra i suoi campi.</p>
+ * Nel database corrisponde a una riga della tabella "utenti", dove il
+ * ruolo e' salvato in una colonna (non ci sono tabelle separate per
+ * ogni tipo di utente).
+ *
+ * Nota: questa classe viaggia tra client e server tramite RMI (per
+ * questo implementa Serializable), quindi NON deve mai contenere la
+ * password dell'utente tra i suoi campi.
  */
 public abstract class Utente implements Serializable {
 
@@ -22,9 +25,10 @@ public abstract class Utente implements Serializable {
     private final String nome;
     private final String cognome;
     private final String username;
-    private final LocalDate dataNascita;   // puo' essere null
+    private final LocalDate dataNascita;   // puo' essere null, non e' obbligatoria
     private final String luogoDomicilio;
 
+    // costruttore comune a tutte le sottoclassi: viene richiamato con super(...)
     protected Utente(long idUtente, String nome, String cognome, String username,
                       LocalDate dataNascita, String luogoDomicilio) {
         this.idUtente = idUtente;
@@ -59,7 +63,7 @@ public abstract class Utente implements Serializable {
         return luogoDomicilio;
     }
 
-    /** Nome del ruolo cosi' come memorizzato nella colonna {@code utenti.ruolo}. */
+    // ogni sottoclasse restituisce il proprio ruolo (cliente, proiezionista o bigliettaio)
     public abstract String getRuolo();
 
     @Override

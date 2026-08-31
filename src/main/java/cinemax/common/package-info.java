@@ -1,10 +1,11 @@
 /**
- * Modello di dominio (entita' applicative) e interfacce {@link java.rmi.Remote}
- * che costituiscono il contratto client/server di CineMax.
+ * Contiene le classi condivise tra client e server di CineMax: le classi
+ * del modello (Utente, Film, Proiezione, Prenotazione, ...) e le
+ * interfacce dei servizi RMI (Remote).
  *
- * <p>Compilato sia in {@code serverCM.jar} sia in {@code clientCM.jar}:
- * il server ne fornisce le implementazioni concrete dei servizi, il client
- * ne usa solo le interfacce e le classi di dominio (che viaggiano sulla
- * connessione RMI come oggetti serializzati).</p>
+ * Questo pacchetto viene incluso sia nel jar del server sia in quello del
+ * client: il server implementa davvero i servizi, il client usa solo le
+ * interfacce per chiamarli da remoto. Le classi del modello viaggiano
+ * tra client e server come oggetti serializzati.
  */
 package cinemax.common;

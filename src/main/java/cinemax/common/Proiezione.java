@@ -7,11 +7,12 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 
 /**
- * Singola proiezione di un {@link Film} in una data/ora, con relativo prezzo
- * (tabella {@code proiezioni}). {@code postiLiberi} e' un dato derivato, non
- * persistito (viene calcolato dalla vista {@code v_proiezioni_disponibilita},
- * vedi {@code doc/01_progettazione_database.md}, §3.3): 200 posti sala meno
- * la somma dei posti gia' prenotati per questa proiezione.
+ * Rappresenta una singola proiezione: un film mostrato in una certa data e
+ * ora, con il relativo prezzo del biglietto (tabella "proiezioni").
+ *
+ * Il campo postiLiberi non e' salvato direttamente nel database, ma viene
+ * calcolato dal server come differenza tra i 200 posti della sala e il
+ * numero di posti gia' prenotati per questa proiezione.
  */
 public class Proiezione implements Serializable {
 
@@ -58,7 +59,8 @@ public class Proiezione implements Serializable {
         return postiLiberi;
     }
 
-    /** {@code true} se la proiezione e' successiva all'istante corrente. */
+    // controlliamo se la proiezione deve ancora avvenire, confrontando data e ora
+    // con l'istante attuale: uniamo data e ora in un unico LocalDateTime per poterli confrontare
     public boolean isFutura() {
         return LocalDateTime.of(dataProiezione, oraProiezione).isAfter(LocalDateTime.now());
     }

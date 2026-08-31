@@ -2,7 +2,7 @@ package cinemax.common;
 
 import java.io.Serializable;
 
-/** Film del catalogo CineMax (tabella {@code film}). */
+// Rappresenta un film del catalogo di CineMax (corrisponde a una riga della tabella "film")
 public class Film implements Serializable {
 
     private static final long serialVersionUID = 1L;
@@ -15,6 +15,7 @@ public class Film implements Serializable {
     private final int durataMinuti;
     private final int etaMinima;
 
+    // costruttore con tutti i campi del film, presi cosi' come sono dal database
     public Film(long idFilm, String titolo, String genere, String regista,
                 int anno, int durataMinuti, int etaMinima) {
         this.idFilm = idFilm;

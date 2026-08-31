@@ -9,45 +9,42 @@ import java.time.LocalTime;
 import java.util.List;
 
 /**
- * Accesso alla tabella {@code proiezioni}, tramite la vista
- * {@code v_proiezioni_disponibilita} per le sole letture (espone anche il
- * dato derivato {@code posti_liberi}, vedi {@code doc/01_progettazione_database.md} §3.3).
+ * DAO per la tabella "proiezioni". Per le sole letture le query si appoggiano
+ * a una vista del database, v_proiezioni_disponibilita, che oltre ai dati
+ * della proiezione calcola anche i posti liberi rimasti (posti_liberi).
  */
 public interface ProiezioneDAO {
 
-    /** @return la proiezione, oppure {@code null} se l'id non esiste */
+    /** Cerca una proiezione per id. Restituisce null se non esiste. */
     Proiezione findById(long idProiezione) throws SQLException;
 
-    /** Ricerca combinabile: ogni criterio {@code null} viene ignorato. */
+    /** Ricerca con criteri combinabili: ogni parametro null viene ignorato come filtro. */
     List<Proiezione> cerca(String titolo, String genere, LocalDate dataDa, LocalDate dataA,
                             BigDecimal costoMin, BigDecimal costoMax) throws SQLException;
 
-    /** Proiezioni nei tre mesi successivi a oggi per un film (titolo anche parziale). */
+    /** Proiezioni nei prossimi tre mesi per un film (il titolo puo' essere parziale). */
     List<Proiezione> prossimiTreMesiPerFilm(String titoloParziale) throws SQLException;
 
-    /** Proiezioni successive a oggi, ordinate cronologicamente. */
+    /** Tutte le proiezioni ancora da svolgere, in ordine cronologico. */
     List<Proiezione> pianificate() throws SQLException;
 
-    /** Proiezioni precedenti a oggi, dalla piu' recente. */
+    /** Le proiezioni gia' passate, dalla piu' recente alla piu' vecchia. */
     List<Proiezione> storiche() throws SQLException;
 
     /**
-     * @return l'id assegnato alla nuova proiezione
-     * @throws SQLException se il trigger {@code trg_sovrapposizione_proiezione}
-     *      rifiuta l'inserimento (proiezione sovrapposta a un'altra, sala unica)
+     * Inserisce una nuova proiezione e restituisce l'id assegnato.
+     * Puo' fallire (SQLException) se un trigger del database rileva che la
+     * proiezione si sovrappone a un'altra gia' presente (nel cinema c'e' una sala sola).
      */
     long inserisci(long idFilm, LocalDate data, LocalTime ora, BigDecimal costoBiglietto) throws SQLException;
 
     /**
-     * @throws SQLException se il trigger {@code trg_proiezione_immutabile_update}
-     *      rifiuta la modifica (esistono prenotazioni) o se la nuova sovrapposizione
-     *      viene rifiutata da {@code trg_sovrapposizione_proiezione}
+     * Modifica data, ora e/o costo di una proiezione. Puo' fallire se
+     * esistono gia' prenotazioni per quella proiezione (in tal caso non e'
+     * piu' modificabile) o se la nuova data/ora si sovrappone ad un'altra proiezione.
      */
     void aggiorna(long idProiezione, LocalDate nuovaData, LocalTime nuovaOra, BigDecimal nuovoCosto) throws SQLException;
 
-    /**
-     * @throws SQLException se il trigger {@code trg_proiezione_immutabile_delete}
-     *      rifiuta la cancellazione (esistono prenotazioni)
-     */
+    /** Cancella una proiezione. Puo' fallire se esistono gia' prenotazioni collegate. */
     void elimina(long idProiezione) throws SQLException;
 }

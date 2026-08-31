@@ -8,70 +8,74 @@ import java.time.LocalTime;
 import java.util.List;
 
 /**
- * Servizio di consultazione e gestione del palinsesto (film e proiezioni).
- * Le operazioni di ricerca/consultazione sono accessibili anche a utenti
- * non autenticati (guest); le operazioni di gestione sono riservate al
- * ruolo {@code proiezionista} (il controllo di autorizzazione e' applicato
- * lato client in base all'utente loggato, e ribadito lato server).
+ * Interfaccia remota per gestire il palinsesto, cioe' film e proiezioni.
+ * Le ricerche sono disponibili anche senza essere loggati (utente guest);
+ * le operazioni che modificano qualcosa (aggiungere/modificare/eliminare)
+ * sono riservate al proiezionista. Il client nasconde questi pulsanti se
+ * l'utente non e' un proiezionista, ma il controllo vero e proprio va
+ * comunque rifatto anche lato server.
  */
 public interface IProiezioneService extends Remote {
 
     /**
-     * Ricerca combinabile per titolo (parziale), genere, intervallo di date,
-     * intervallo di costo. Ogni criterio e' opzionale ({@code null} = ignorato).
+     * Cerca le proiezioni in base ai criteri passati: titolo (anche
+     * parziale), genere, intervallo di date, intervallo di costo. Ogni
+     * parametro e' facoltativo: se e' null quel criterio viene ignorato.
      */
     List<Proiezione> cercaProiezioni(String titolo, String genere, LocalDate dataDa,
                                       LocalDate dataA, BigDecimal costoMin, BigDecimal costoMax)
             throws RemoteException;
 
-    /** Dettaglio di una proiezione (schermata di dettaglio dopo la ricerca). */
+    /** Restituisce i dettagli di una singola proiezione dato il suo id. */
     Proiezione visualizzaProiezione(long idProiezione) throws RemoteException, ServiceException;
 
     /**
-     * Proiezioni nei tre mesi successivi a oggi per un film (titolo anche
-     * parziale) — schermata iniziale per l'utente guest.
+     * Restituisce le proiezioni dei prossimi tre mesi per un film (il
+     * titolo puo' essere parziale). E' la schermata che vede l'utente
+     * guest appena apre l'applicazione.
      */
     List<Proiezione> proiezioniProssimiTreMesi(String titoloParziale) throws RemoteException;
 
-    /** Ricerca nel catalogo film (usata dal proiezionista per evitare doppioni). */
+    /** Cerca nel catalogo film per titolo parziale (usata dal proiezionista per non inserire doppioni). */
     List<Film> cercaFilm(String titoloParziale) throws RemoteException;
 
     /**
-     * Inserisce un nuovo film a catalogo.
+     * Aggiunge un nuovo film al catalogo.
      *
-     * @return l'id assegnato al film
+     * @return l'id assegnato al nuovo film
      */
     long aggiungiFilm(String titolo, String genere, String regista, int anno,
                        int durataMinuti, int etaMinima) throws RemoteException, ServiceException;
 
     /**
-     * Inserisce una nuova proiezione per un film gia' a catalogo.
+     * Aggiunge una nuova proiezione per un film gia' presente nel catalogo.
      *
-     * @return l'id assegnato alla proiezione
-     * @throws ServiceException se la proiezione si sovrappone a una gia' esistente (sala unica)
+     * @return l'id assegnato alla nuova proiezione
+     * @throws ServiceException se l'orario scelto si sovrappone a un'altra proiezione gia' presente (c'e' una sola sala)
      */
     long aggiungiProiezione(long idFilm, LocalDate data, LocalTime ora, BigDecimal costoBiglietto)
             throws RemoteException, ServiceException;
 
     /**
-     * Modifica data/ora/costo di una proiezione.
+     * Modifica data, ora e/o costo di una proiezione gia' esistente.
      *
-     * @throws ServiceException se la proiezione ha gia' prenotazioni associate,
-     *      oppure se il nuovo orario si sovrappone a un'altra proiezione
+     * @throws ServiceException se la proiezione ha gia' delle prenotazioni
+     *      (non si puo' piu' cambiare) oppure se il nuovo orario si
+     *      sovrappone a un'altra proiezione
      */
     void modificaProiezione(long idProiezione, LocalDate nuovaData, LocalTime nuovaOra,
                              BigDecimal nuovoCosto) throws RemoteException, ServiceException;
 
     /**
-     * Elimina una proiezione.
+     * Elimina una proiezione dal palinsesto.
      *
-     * @throws ServiceException se la proiezione ha gia' prenotazioni associate
+     * @throws ServiceException se la proiezione ha gia' delle prenotazioni
      */
     void eliminaProiezione(long idProiezione) throws RemoteException, ServiceException;
 
-    /** Proiezioni pianificate (successive a oggi) — vista proiezionista. */
+    /** Restituisce le proiezioni ancora da fare, cioe' successive a oggi (vista del proiezionista). */
     List<Proiezione> proiezioniPianificate() throws RemoteException;
 
-    /** Proiezioni storiche (precedenti a oggi) — vista proiezionista. */
+    /** Restituisce le proiezioni gia' passate, cioe' precedenti a oggi (vista del proiezionista). */
     List<Proiezione> proiezioniStoriche() throws RemoteException;
 }

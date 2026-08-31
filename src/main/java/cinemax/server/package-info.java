@@ -1,9 +1,8 @@
 /**
- * Implementazione lato server di CineMax: accesso al database PostgreSQL
- * (package {@code db} e {@code dao}), logica dei servizi RMI (package
- * {@code service}), factory del modello utente (package {@code factory})
- * e punto di ingresso {@link cinemax.server.ServerMain}.
+ * Codice lato server di CineMax: accesso al database PostgreSQL (package db
+ * e dao), logica dei servizi RMI (package service), factory del modello
+ * utente (package factory) e la classe main ServerMain.
  *
- * <p>Incluso esclusivamente in {@code serverCM.jar}.</p>
+ * Questo package finisce solo dentro serverCM.jar, non nel jar del client.
  */
 package cinemax.server;

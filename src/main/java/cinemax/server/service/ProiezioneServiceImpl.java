@@ -17,12 +17,17 @@ import java.time.LocalTime;
 import java.util.List;
 
 /**
- * Implementazione RMI di {@link IProiezioneService}. Non contiene SQL: delega ai DAO.
+ * Implementazione del servizio RMI per la gestione di film e proiezioni
+ * (interfaccia IProiezioneService). Come le altre classi *ServiceImpl,
+ * non scrive query SQL direttamente ma usa i DAO (ProiezioneDAO e FilmDAO).
  *
- * <p>Nota implementativa: le {@link SQLException} intercettate non vengono mai
- * incluse come "cause" delle eccezioni rilanciate (vedi {@link LogUtil}), per
- * evitare che una classe specifica del driver JDBC (assente sul classpath del
- * client) debba essere deserializzata attraverso la connessione RMI.</p>
+ * Attenzione: quando catturiamo una SQLException NON la mettiamo mai come
+ * causa dentro l'eccezione che rilanciamo verso il client. E' voluto: il
+ * driver JDBC non e' presente sul classpath del client, quindi se provassimo
+ * a mandare quella causa attraverso RMI il client non riuscirebbe a
+ * deserializzarla e otterremmo un errore ancora peggiore. Per questo l'errore
+ * viene solo loggato sul server con LogUtil, e al client arriva un messaggio
+ * pulito.
  */
 public class ProiezioneServiceImpl extends UnicastRemoteObject implements IProiezioneService {
 
@@ -38,6 +43,9 @@ public class ProiezioneServiceImpl extends UnicastRemoteObject implements IProie
     @Override
     public List<Proiezione> cercaProiezioni(String titolo, String genere, LocalDate dataDa, LocalDate dataA,
                                              BigDecimal costoMin, BigDecimal costoMax) throws RemoteException {
+        // Ricerca con filtri opzionali: se un parametro e' null il DAO lo
+        // ignora e non lo usa nella query (non e' compito nostro costruire
+        // la query, ci pensa il DAO).
         try {
             return proiezioneDAO.cerca(titolo, genere, dataDa, dataA, costoMin, costoMax);
         } catch (SQLException e) {
@@ -50,6 +58,9 @@ public class ProiezioneServiceImpl extends UnicastRemoteObject implements IProie
     public Proiezione visualizzaProiezione(long idProiezione) throws RemoteException, ServiceException {
         try {
             Proiezione p = proiezioneDAO.findById(idProiezione);
+            // Il DAO restituisce null se non trova niente con quell'id,
+            // quindi il controllo va fatto qui: trasformiamo il "non trovato"
+            // in un errore chiaro per l'utente, invece di restituire null.
             if (p == null) {
                 throw new ServiceException("Proiezione non trovata (id=" + idProiezione + ")");
             }
@@ -83,6 +94,9 @@ public class ProiezioneServiceImpl extends UnicastRemoteObject implements IProie
     @Override
     public long aggiungiFilm(String titolo, String genere, String regista, int anno,
                               int durataMinuti, int etaMinima) throws RemoteException, ServiceException {
+        // Validazioni minime lato applicazione, prima di andare sul
+        // database: un film senza titolo o con durata zero/negativa non
+        // avrebbe senso.
         if (titolo == null || titolo.isBlank()) {
             throw new ServiceException("Il titolo del film e' obbligatorio");
         }
@@ -100,16 +114,26 @@ public class ProiezioneServiceImpl extends UnicastRemoteObject implements IProie
     @Override
     public long aggiungiProiezione(long idFilm, LocalDate data, LocalTime ora, BigDecimal costoBiglietto)
             throws RemoteException, ServiceException {
+        // Il costo del biglietto deve essere un numero positivo, altrimenti
+        // non ha senso e blocchiamo l'operazione prima ancora di controllare
+        // il film.
         if (costoBiglietto == null || costoBiglietto.signum() <= 0) {
             throw new ServiceException("Il costo del biglietto deve essere positivo");
         }
         try {
+            // Non possiamo creare una proiezione per un film che non esiste,
+            // quindi controlliamo prima che l'id del film sia valido.
             if (filmDAO.findById(idFilm) == null) {
                 throw new ServiceException("Film non trovato (id=" + idFilm + ")");
             }
             return proiezioneDAO.inserisci(idFilm, data, ora, costoBiglietto);
         } catch (SQLException e) {
-            // trg_sovrapposizione_proiezione solleva qui in caso di conflitto (sala unica)
+            // Nota: qui puo' entrare in gioco anche il trigger del database
+            // trg_sovrapposizione_proiezione, che impedisce di creare due
+            // proiezioni sovrapposte nella stessa sala (il cinema ha una
+            // sola sala). Questo controllo NON lo facciamo in Java: e' il
+            // database stesso a bloccare l'inserimento e a far scattare
+            // questo catch.
             LogUtil.erroreDb("aggiungiProiezione", e);
             throw new ServiceException("Impossibile aggiungere la proiezione: " + e.getMessage());
         }
@@ -127,8 +151,13 @@ public class ProiezioneServiceImpl extends UnicastRemoteObject implements IProie
             }
             proiezioneDAO.aggiorna(idProiezione, nuovaData, nuovaOra, nuovoCosto);
         } catch (SQLException e) {
-            // trg_proiezione_immutabile_update (prenotazioni associate) o
-            // trg_sovrapposizione_proiezione sollevano qui
+            // Se la proiezione ha gia' delle prenotazioni collegate, il
+            // trigger trg_proiezione_immutabile_update la blocca (regola di
+            // business: una proiezione gia' prenotata da qualcuno non si
+            // puo' piu' spostare di data/ora, altrimenti si romperebbero le
+            // prenotazioni esistenti). Puo' scattare anche
+            // trg_sovrapposizione_proiezione se il nuovo orario si sovrappone
+            // con un'altra proiezione. In entrambi i casi arriviamo qui.
             LogUtil.erroreDb("modificaProiezione", e);
             throw new ServiceException("Impossibile modificare la proiezione: " + e.getMessage());
         }
@@ -142,7 +171,10 @@ public class ProiezioneServiceImpl extends UnicastRemoteObject implements IProie
             }
             proiezioneDAO.elimina(idProiezione);
         } catch (SQLException e) {
-            // trg_proiezione_immutabile_delete solleva qui se esistono prenotazioni
+            // Stessa idea del metodo sopra: se esistono prenotazioni legate a
+            // questa proiezione, il trigger trg_proiezione_immutabile_delete
+            // impedisce la cancellazione (non avrebbe senso eliminare una
+            // proiezione per cui dei clienti hanno gia' prenotato).
             LogUtil.erroreDb("eliminaProiezione", e);
             throw new ServiceException("Impossibile eliminare la proiezione: " + e.getMessage());
         }
@@ -150,6 +182,8 @@ public class ProiezioneServiceImpl extends UnicastRemoteObject implements IProie
 
     @Override
     public List<Proiezione> proiezioniPianificate() throws RemoteException {
+        // Proiezioni ancora da fare (data futura), usate ad esempio nella
+        // schermata dell'impiegato per vedere il calendario del cinema.
         try {
             return proiezioneDAO.pianificate();
         } catch (SQLException e) {
@@ -160,6 +194,7 @@ public class ProiezioneServiceImpl extends UnicastRemoteObject implements IProie
 
     @Override
     public List<Proiezione> proiezioniStoriche() throws RemoteException {
+        // Proiezioni gia' passate, tenute per lo storico.
         try {
             return proiezioneDAO.storiche();
         } catch (SQLException e) {

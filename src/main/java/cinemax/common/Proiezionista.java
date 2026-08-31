@@ -2,7 +2,7 @@ package cinemax.common;
 
 import java.time.LocalDate;
 
-/** Utente con ruolo {@code proiezionista}: gestisce il palinsesto (film e proiezioni). */
+// Utente con ruolo "proiezionista": gestisce il palinsesto, cioe' film e proiezioni
 public class Proiezionista extends Utente {
 
     private static final long serialVersionUID = 1L;

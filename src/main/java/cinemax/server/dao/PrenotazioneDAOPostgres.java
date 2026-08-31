@@ -15,9 +15,14 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
-/** Implementazione PostgreSQL di {@link PrenotazioneDAO} (vedi {@code doc/02_query_servizi.md}). */
+/** Implementazione di PrenotazioneDAO con query JDBC su PostgreSQL. */
 public class PrenotazioneDAOPostgres implements PrenotazioneDAO {
 
+    // Una prenotazione, per essere mostrata al client, porta con se' anche i
+    // dati dell'utente, della proiezione e del film collegati. Invece di fare
+    // piu' query separate facciamo un'unica query con dei JOIN, e questi due
+    // pezzi di SQL (colonne selezionate + tabelle unite) vengono riusati da
+    // quasi tutti i metodi di questa classe.
     private static final String COLONNE_JOIN =
             "pr.codice_prenotazione, pr.id_utente, u.nome, u.cognome, " +
             "p.id_proiezione, f.id_film, f.titolo, f.genere, f.regista, f.anno, f.durata_minuti, f.eta_minima, " +
@@ -32,6 +37,11 @@ public class PrenotazioneDAOPostgres implements PrenotazioneDAO {
 
     @Override
     public String inserisci(long idUtente, long idProiezione, int numPosti) throws SQLException {
+        // Attenzione: sulla tabella prenotazioni ci sono dei trigger lato
+        // database che possono far fallire questo INSERT (per esempio se
+        // l'utente non ha ruolo "cliente" oppure se non ci sono abbastanza
+        // posti liberi sulla proiezione). In quel caso il driver JDBC lancia
+        // qui una SQLException, che semplicemente lasciamo propagare.
         String sql = "INSERT INTO prenotazioni (id_utente, id_proiezione, num_posti) " +
                 "VALUES (?, ?, ?) RETURNING codice_prenotazione";
         try (Connection conn = ConnectionManager.getInstance().getConnection();
@@ -92,6 +102,13 @@ public class PrenotazioneDAOPostgres implements PrenotazioneDAO {
     @Override
     public List<Prenotazione> cerca(String codice, String nomeCognome, String titoloFilm,
                                      LocalDate dataDa, LocalDate dataA) throws SQLException {
+        // Ricerca con filtri opzionali: per ogni criterio la query fa
+        // "?::tipo IS NULL OR condizione", cioe' se il parametro e' null il
+        // filtro viene semplicemente ignorato (l'OR con IS NULL e' sempre
+        // vero) e altrimenti si applica la condizione vera e propria. Ogni
+        // filtro compare due volte nella query (una per il controllo IS NULL
+        // e una per il confronto), per questo sotto lo stesso valore viene
+        // impostato su piu' indici di parametro.
         String sql = "SELECT " + COLONNE_JOIN + " " + FROM_JOIN +
                 "WHERE (?::text IS NULL OR pr.codice_prenotazione = ?::text) " +
                 "AND (?::text IS NULL OR u.nome ILIKE '%' || ?::text || '%' OR u.cognome ILIKE '%' || ?::text || '%') " +
@@ -130,6 +147,8 @@ public class PrenotazioneDAOPostgres implements PrenotazioneDAO {
 
     @Override
     public LocalDate dataProiezioneDiPrenotazione(String codicePrenotazione) throws SQLException {
+        // Qui basta la data della proiezione, quindi non serve fare il join
+        // completo con film e utenti: solo prenotazioni + proiezioni.
         String sql = "SELECT p.data_proiezione FROM prenotazioni pr " +
                 "JOIN proiezioni p ON p.id_proiezione = pr.id_proiezione " +
                 "WHERE pr.codice_prenotazione = ?";
@@ -142,6 +161,8 @@ public class PrenotazioneDAOPostgres implements PrenotazioneDAO {
         }
     }
 
+    // Metodo di comodo condiviso da tutte le query che restituiscono piu' righe:
+    // scorre il ResultSet ed accumula un oggetto Prenotazione per ogni riga.
     private List<Prenotazione> eseguiLista(PreparedStatement ps) throws SQLException {
         try (ResultSet rs = ps.executeQuery()) {
             List<Prenotazione> risultato = new ArrayList<>();
@@ -152,6 +173,9 @@ public class PrenotazioneDAOPostgres implements PrenotazioneDAO {
         }
     }
 
+    // Trasforma la riga corrente del ResultSet (che viene dalla query con i
+    // JOIN su utenti/proiezioni/film) in un oggetto Prenotazione completo,
+    // passando prima per gli oggetti Film e Proiezione che contiene.
     private Prenotazione mapRow(ResultSet rs) throws SQLException {
         Film film = new Film(
                 rs.getLong("id_film"),
@@ -167,7 +191,7 @@ public class PrenotazioneDAOPostgres implements PrenotazioneDAO {
                 rs.getDate("data_proiezione").toLocalDate(),
                 rs.getTime("ora_proiezione").toLocalTime(),
                 rs.getBigDecimal("costo_biglietto"),
-                0); // posti_liberi non necessario in questa vista: non fa parte della join prenotazioni
+                0); // posti_liberi non ci serve qui: questa query non fa il join con la vista disponibilita'
         return new Prenotazione(
                 rs.getString("codice_prenotazione"),
                 rs.getLong("id_utente"),
@@ -178,6 +202,9 @@ public class PrenotazioneDAOPostgres implements PrenotazioneDAO {
                 rs.getTimestamp("data_prenotazione").toLocalDateTime());
     }
 
+    // Imposta un parametro String della query, oppure NULL SQL se il valore
+    // e' assente o e' una stringa vuota/di soli spazi (cosi' un filtro "vuoto"
+    // nella ricerca viene trattato come "nessun filtro").
     private void setNullableString(PreparedStatement ps, int index, String value) throws SQLException {
         if (value == null || value.isBlank()) {
             ps.setNull(index, Types.VARCHAR);
@@ -186,6 +213,7 @@ public class PrenotazioneDAOPostgres implements PrenotazioneDAO {
         }
     }
 
+    // Stessa idea di setNullableString ma per le date.
     private void setNullableDate(PreparedStatement ps, int index, LocalDate value) throws SQLException {
         if (value == null) {
             ps.setNull(index, Types.DATE);

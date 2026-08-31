@@ -5,16 +5,22 @@ import cinemax.common.Film;
 import java.sql.SQLException;
 import java.util.List;
 
-/** Accesso alla tabella {@code film} (catalogo). */
+/**
+ * DAO (Data Access Object) per la tabella "film": qui dentro ci sono solo le
+ * firme dei metodi, la vera implementazione con le query SQL sta in
+ * FilmDAOPostgres. Separare interfaccia e implementazione permette in teoria
+ * di cambiare database senza toccare il resto del codice (i service usano
+ * solo questa interfaccia, non conoscono PostgreSQL).
+ */
 public interface FilmDAO {
 
-    /** Ricerca per titolo parziale (case-insensitive), ordinata per titolo. */
+    /** Cerca i film il cui titolo contiene la stringa data (ricerca parziale, non case sensitive), ordinati per titolo. */
     List<Film> cercaPerTitolo(String titoloParziale) throws SQLException;
 
-    /** @return il film, oppure {@code null} se l'id non esiste */
+    /** Cerca un film per id. Restituisce null se non esiste. */
     Film findById(long idFilm) throws SQLException;
 
-    /** @return l'id assegnato al nuovo film */
+    /** Inserisce un nuovo film e restituisce l'id che il database gli ha assegnato. */
     long inserisci(String titolo, String genere, String regista, int anno,
                     int durataMinuti, int etaMinima) throws SQLException;
 }
