@@ -1,0 +1,1 @@
+packageSearchIndex = [{"l":"All Packages","u":"allpackages-index.html"},{"l":"cinemax"},{"l":"cinemax.client"},{"l":"cinemax.client.controller"},{"l":"cinemax.client.view"},{"l":"cinemax.common"},{"l":"cinemax.server"},{"l":"cinemax.server.dao"},{"l":"cinemax.server.db"},{"l":"cinemax.server.factory"},{"l":"cinemax.server.service"}];updateSearchResults();

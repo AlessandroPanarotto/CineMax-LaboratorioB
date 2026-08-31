@@ -157,8 +157,13 @@ Legenda: sottolineate (qui in **grassetto concettuale**) le chiavi primarie `id_
 
 ## 5. Diagrammi
 
-- **`er_concettuale.png`** — schema E-R concettuale, con gerarchia di generalizzazione UTENTE → {CLIENTE, PROIEZIONISTA, BIGLIETTAIO} (totale ed esclusiva, notazione "t, e").
-- **`er_ristrutturato.png`** — schema E-R dopo la ristrutturazione (gerarchia accorpata in UTENTE + attributo `ruolo`, con annotazione del vincolo di integrità risultante).
+![Schema E-R concettuale](er_concettuale.png)
+
+Schema E-R concettuale, con gerarchia di generalizzazione UTENTE → {CLIENTE, PROIEZIONISTA, BIGLIETTAIO} (totale ed esclusiva, notazione "t, e").
+
+![Schema E-R ristrutturato](er_ristrutturato.png)
+
+Schema E-R dopo la ristrutturazione (gerarchia accorpata in UTENTE + attributo `ruolo`, con annotazione del vincolo di integrità risultante).
 
 I diagrammi sono stati generati con Graphviz in notazione Chen (entità = rettangolo, relazione = rombo, attributo = ellisse, chiave = testo sottolineato, attributo opzionale = ellisse tratteggiata).
 

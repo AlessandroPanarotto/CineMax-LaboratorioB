@@ -1,0 +1,10 @@
+cinemax
+cinemax.client
+cinemax.client.controller
+cinemax.client.view
+cinemax.common
+cinemax.server
+cinemax.server.dao
+cinemax.server.db
+cinemax.server.factory
+cinemax.server.service

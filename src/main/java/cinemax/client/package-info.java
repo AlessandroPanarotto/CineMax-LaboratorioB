@@ -1,3 +1,9 @@
+/*
+ * Progetto CineMax - Laboratorio Interdisciplinare B (a.a. 2025/2026)
+ * Universita' degli Studi dell'Insubria
+ *
+ * Autore: Panarotto Alessandro - matricola 757930 - sede di Varese (VA)
+ */
 /**
  * Package del client di CineMax (segue lo schema MVC visto a lezione):
  * - view: le finestre Swing con cui interagisce l'utente
