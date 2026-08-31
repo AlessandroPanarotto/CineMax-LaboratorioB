@@ -139,7 +139,7 @@ per fare delle prove), ognuna si comporta come un utente indipendente.
 6. STRUTTURA DEL REPOSITORY
 --------------------------------------------------------------------
 
-    autori.txt   - dati anagrafici dell'autore del progetto
+    autori.txt   - dati anagrafici degli autori del progetto
     README.txt   - questo file
     pom.xml      - file di build Maven
     src/         - codice sorgente Java (package cinemax) e script SQL

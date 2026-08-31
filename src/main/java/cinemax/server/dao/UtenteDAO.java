@@ -2,7 +2,11 @@
  * Progetto CineMax - Laboratorio Interdisciplinare B (a.a. 2025/2026)
  * Universita' degli Studi dell'Insubria
  *
- * Autore: Panarotto Alessandro - matricola 757930 - sede di Varese (VA)
+ * Autori:
+ *   Panarotto Alessandro   - matricola 757930 - sede di Varese (VA)
+ *   Calabrese Davide Paolo - matricola 763012 - sede di Varese (VA)
+ *   Mohan Thomas Paolo     - matricola 761573 - sede di Varese (VA)
+ *   Trentini Federico      - matricola 760478 - sede di Varese (VA)
  */
 package cinemax.server.dao;
 

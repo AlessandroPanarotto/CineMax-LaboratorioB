@@ -1,7 +1,11 @@
 ---
 title: "CineMax — Manuale Utente"
 subtitle: "Laboratorio Interdisciplinare B — a.a. 2025/2026 — Università degli Studi dell'Insubria"
-author: "Alessandro Panarotto"
+author:
+  - "Alessandro Panarotto"
+  - "Davide Paolo Calabrese"
+  - "Thomas Paolo Mohan"
+  - "Federico Trentini"
 date: "Agosto 2026"
 toc: true
 toc-depth: 2
