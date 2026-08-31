@@ -48,8 +48,16 @@ tabelle. Con PostgreSQL gia' installato e in esecuzione:
        e 5 utenti bigliettai gia' pronti per il login (le credenziali
        di prova sono elencate in fondo allo script stesso).
 
-    3) (Facoltativo, solo per test) Per avere anche qualche film,
-       proiezione e prenotazione di esempio gia' pronti:
+    3) Per caricare i dati di partenza forniti dal docente (file
+       src/main/resources/db/proiezioni.csv: 725 film e 8878
+       proiezioni), lanciare psql dalla cartella principale del
+       progetto (il percorso del CSV nello script e' relativo a
+       quella cartella) ed eseguire:
+           psql -h <host> -U <utente_postgres> -d dbCM \
+                -f src/main/resources/db/import_proiezioni.sql
+
+    4) (Facoltativo, solo per test) Per avere anche qualche film,
+       proiezione e prenotazione di esempio aggiuntivi:
            psql -h <host> -U <utente_postgres> -d dbCM \
                 -f src/main/resources/db/dati_esempio.sql
 

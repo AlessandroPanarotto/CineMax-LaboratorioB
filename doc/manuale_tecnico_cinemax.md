@@ -253,7 +253,9 @@ Lo schema è stato implementato ed eseguito con successo su PostgreSQL 16 (scrip
 | File | Contenuto |
 |---|---|
 | `db/schema_cinemax.sql` | tabelle, chiavi, vincoli `CHECK`/`UNIQUE`/`FK`, funzioni e trigger per i vincoli non esprimibili in DDL dichiarativo (§2.3), vista `v_proiezioni_disponibilita`, seed obbligatorio (2 proiezionisti + 5 bigliettai) |
-| `db/dati_esempio.sql` | dati facoltativi (film, proiezioni, un cliente e una prenotazione) usati **solo** per verificare lo schema — da sostituire con l'import di `proiezioni.csv` |
+| `db/dati_esempio.sql` | dati facoltativi (film, proiezioni, un cliente e una prenotazione) usati **solo** per verificare lo schema |
+| `db/proiezioni.csv` | file draft fornito dal docente (725 film, 8878 proiezioni, dal 2018 al 2027) |
+| `db/import_proiezioni.sql` | script di import di `proiezioni.csv` nelle tabelle `film` e `proiezioni` (§6.2) |
 
 ### 6.1 Test eseguiti (in questa sessione, su istanza PostgreSQL locale)
 
@@ -266,9 +268,21 @@ Lo script è stato eseguito end-to-end e sono stati verificati con esito positiv
 5. rifiuto della cancellazione di una proiezione con prenotazioni associate;
 6. rifiuto di un `username` duplicato (vincolo `UNIQUE`).
 
-### 6.2 Note per i prossimi passi
+### 6.2 Import del file `proiezioni.csv`
 
-- **`proiezioni.csv`**: il file draft del docente non è ancora stato caricato in questa sessione. Quando disponibile, va scritto uno script di import (SQL `COPY`/`\copy` oppure utility Java/JDBC) coerente con le colonne effettive del file: caricalo pure per generarlo.
+Il docente fornisce un file `proiezioni.csv` (colonne: `data_ora_proiezione, titolo_film, genere, regista, anno, durata_minuti, eta_minima, prezzo_biglietto`) con i dati di partenza su film e proiezioni. Il file ricevuto contiene 8878 righe con 725 titoli di film distinti, con date dal 2018-01-01 al 2027-12-30.
+
+Prima di scrivere lo script di import sono stati eseguiti dei controlli di qualità sui dati (con uno script Python di appoggio, non incluso nella consegna):
+
+1. per ogni titolo di film, i dati anagrafici (genere, regista, anno, durata, età minima) sono sempre identici su tutte le righe — quindi si può dedurre un solo record `film` per titolo distinto;
+2. nessuna sovrapposizione tra le proiezioni (coerente con l'unica sala disponibile);
+3. tutti i valori numerici rientrano nei vincoli `CHECK` dello schema (anno, durata, età minima, prezzo);
+4. nessuna collisione di titolo con i film già presenti in `dati_esempio.sql`.
+
+Lo script `db/import_proiezioni.sql` carica il file in una tabella di appoggio temporanea con `\copy` (lato client, non richiede che il file sia visibile al processo server di PostgreSQL), poi popola `film` (deduplicando per titolo) e `proiezioni` (agganciata al film tramite il titolo, con il timestamp del CSV spezzato in data e ora separate). Eseguito con successo su questa istanza locale, senza violazioni di vincoli o trigger: 725 film e 8878 proiezioni inseriti (729 e 8882 includendo anche i dati di esempio di `dati_esempio.sql`).
+
+### 6.3 Note per i prossimi passi
+
 - **Vincolo sull'eliminazione delle prenotazioni** (§1.4): la condizione "data di proiezione precedente la data odierna" riportata nella specifica per `eliminaPrenotazione()` sembra invertita rispetto alla logica applicativa attesa — verificare col docente prima di implementare la funzionalità lato applicazione (non impatta lo schema del database).
 - **Password**: nel seed sono usate password dimostrative cifrate con `pgcrypto` (`crypt()`/`gen_salt('bf')`); l'applicazione Java potrà verificarle con la stessa funzione (`SELECT ... WHERE crypt(input, password_hash) = password_hash`) oppure sostituire l'approccio con hashing lato applicativo (es. jBCrypt), aggiornando di conseguenza gli INSERT di seed.
 - Questa è la fase di **progettazione del database**; il prossimo passo naturale è la progettazione UML dell'applicazione (casi d'uso, diagramma delle classi, design pattern) e poi lo sviluppo di `serverCM`/`clientCM`.
